@@ -5,7 +5,6 @@ std::string suitfy[5] = {"Hearts", "Diamonds", "Clubs", "Spades", "all Suits"};
 std::string valuefy[14] = {"Joker", "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
 /*                      unused0       1     2    3    4    5    6    7    8    9    10     11      12       13   */
 class Card {
-private:
     int value;
     int suit;
 public:
@@ -16,7 +15,6 @@ public:
     };
 
 class Deck {
-private:
     Card cards[52];
     // 0 -> Top of the deck
     // Using a card puts it at the bottom of the deck
@@ -32,7 +30,6 @@ public:
     }
     Card popFCard() {
         return cards[0];
-        cycleFCard();
     }
     void cycleFCard() {
         int su = cards[0].getSuit();
@@ -51,13 +48,12 @@ public:
 };
 
 class Player {
-private:
     Card hand[2];
     int money;
     bool isPlaying;
     bool itsTurn;
 public:
-    Player(Deck &deck) {
+    explicit Player(Deck &deck) {
         hand[0] = deck.popFCard();
         deck.cycleFCard();
         hand[1] = deck.popFCard();
@@ -74,6 +70,7 @@ public:
 
 int main() {
     Deck deck;
+    deck.shuffle();
     Player player1(deck);
     player1.printHand();
     Player player2(deck);
