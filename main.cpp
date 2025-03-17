@@ -1,8 +1,10 @@
 #include <iostream>
 #include <algorithm>
+#include <array>
+#include <random>
 /*                          0          1          2        3           4      */
-std::string suitfy[5] = {"Hearts", "Diamonds", "Clubs", "Spades", "all Suits"};
-std::string valuefy[14] = {"Joker", "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
+const std::array<std::string,5> suitfy = {"Hearts", "Diamonds", "Clubs", "Spades", "all Suits"};
+const std::array<std::string,14> valuefy = {"Joker", "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
 /*                      unused0       1     2    3    4    5    6    7    8    9    10     11      12       13   */
 class Card {
     int value;
@@ -20,7 +22,9 @@ class Deck {
     // Using a card puts it at the bottom of the deck
 public:
     void shuffle() {
-        std::random_shuffle(std::begin(cards), std::end(cards));
+        static std::random_device rd;
+        static std::mt19937 g(rd());
+        std::shuffle(std::begin(cards), std::end(cards), g);
         std::cout << "Shuffled" << std::endl;
     };
     void print() {
