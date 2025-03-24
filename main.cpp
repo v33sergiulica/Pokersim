@@ -37,11 +37,11 @@ public:
         std::shuffle(std::begin(cards), std::end(cards), g);
         std::cout << "Shuffled" << std::endl;
     };
-    void print() {
+   /* void print() {
         for (int i = 0; i < 52; i++) {
             std::cout << valuefy[cards[i].getValue()] << " of " << suitfy[cards[i].getSuit()] << std::endl;
         }
-    }
+    } */
     Card popFCard() {
         return cards[0];
     }
@@ -188,7 +188,7 @@ struct HandEvaluation {
     }
 };
 
-HandEvaluation evaluateHand(std::vector<Card> cards) {
+HandEvaluation evaluateHand(const std::vector<Card>& cards) {
     std::map<int, int> valueCount;
     std::map<int, std::vector<int>> suitValues;
     std::vector<int> sortedValues;
@@ -305,7 +305,7 @@ HandEvaluation evaluateHand(std::vector<Card> cards) {
     return {0, {sortedValues[0], sortedValues[1], sortedValues[2], sortedValues[3], sortedValues[4]}};
 }
 
-Player* determineWinner(std::vector<Player> &players, Table &table) {
+Player* determineWinner(std::vector<Player> &players, const Table &table) {
     if (players.size() < 2) return players.empty() ? nullptr : &players[0];
 
     Player* bestPlayer = &players[0];
