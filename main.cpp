@@ -91,7 +91,7 @@ class Table {
     bool river;
 public:
     Table() {
-        for (int i = 0; i < 5; i++) {tableHand[i] = Card();}
+        for (int i = 0; i < 5; i++) { tableHand[i] = Card(); }
         betFaze = true;
         river = false;
         flop = false;
@@ -109,44 +109,44 @@ public:
         tableHand[4] = deck.popFCard();
         deck.cycleFCard();
         betFaze = bf;
-        river = r;
         flop = f;
         turn = t;
+        river = r;
     }
     const Card* getTableHand() const { return tableHand; }
     Table(const Table &other)
         : betFaze(other.betFaze),
-          river(other.river),
           flop(other.flop),
-          turn(other.turn) {
+          turn(other.turn),
+          river(other.river) {
     }
     Table(Table &&other) noexcept
         : betFaze(other.betFaze),
-          river(other.river),
           flop(other.flop),
-          turn(other.turn) {
+          turn(other.turn),
+          river(other.river) {
     }
     Table & operator=(const Table &other) {
         if (this == &other)
             return *this;
         betFaze = other.betFaze;
-        river = other.river;
         flop = other.flop;
         turn = other.turn;
+        river = other.river;
         return *this;
     }
     Table & operator=(Table &&other) noexcept {
         if (this == &other)
             return *this;
         betFaze = other.betFaze;
-        river = other.river;
         flop = other.flop;
         turn = other.turn;
+        river = other.river;
         return *this;
     }
     ~Table() = default;
     void printTable() {
-        if (betFaze) {std::cout << "No cards on table" << std::endl;}
+        if (betFaze) { std::cout << "No cards on table" << std::endl; }
         else if (flop) {
             std::cout << "First table card is a " << valuefy[tableHand[0].getValue()] << " of " << suitfy[tableHand[0].getSuit()] << std::endl;
             std::cout << "Second table card is a " << valuefy[tableHand[1].getValue()] << " of " << suitfy[tableHand[1].getSuit()] << std::endl;
