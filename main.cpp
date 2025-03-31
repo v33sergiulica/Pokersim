@@ -5,6 +5,7 @@
 #include <vector>
 #include <tuple>
 #include <map>
+#include <ostream>
 #include <set>
 /*                                                 0          1          2        3           4      */
 const std::array<std::string,5> suitfy = {"Hearts", "Diamonds", "Clubs", "Spades", "all Suits"};
@@ -144,6 +145,15 @@ public:
         river = other.river;
         return *this;
     }
+
+    friend std::ostream & operator<<(std::ostream &os, const Table &obj) {
+        return os
+               << "betFaze: " << obj.betFaze
+               << " flop: " << obj.flop
+               << " turn: " << obj.turn
+               << " river: " << obj.river;
+    }
+
     ~Table() = default;
     void printTable() {
         if (betFaze) { std::cout << "No cards on table" << std::endl; }
@@ -169,11 +179,17 @@ public:
 
 };
 
-struct HandEvaluation {
+class HandEvaluation {
     int rank;
     std::vector<int> tiebreakers;
 
-    // Correct comparison: FIRST check rank, THEN tiebreakers
+public:
+    HandEvaluation(int r, const std::vector<int>& tb) : rank(r), tiebreakers(tb) {}
+
+    // Getters
+    int getRank() const { return rank; }
+    const std::vector<int>& getTiebreakers() const { return tiebreakers; }
+
     bool operator>(const HandEvaluation &other) const {
         if (rank != other.rank) {
             return rank > other.rank; // Higher rank wins
@@ -185,6 +201,16 @@ struct HandEvaluation {
             }
         }
         return false; // Hands are equal
+    }
+
+    bool operator==(const HandEvaluation &other) const {
+        if (rank != other.rank) {return false;}
+        for (size_t i = 0; i < tiebreakers.size(); ++i) {
+            if (tiebreakers[i] != other.tiebreakers[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 };
 
@@ -317,12 +343,14 @@ Player* determineWinner(std::vector<Player> &players, const Table &table) {
 
     std::cout << "\n=== Player 1 ===\n";
     bestPlayer->printHand();
-    std::cout << "Rank: " << bestEval.rank << " (";
+    std::cout << "Rank: " << bestEval.getRank() << " (";
     const char* ranks[] = {"High","Pair","Two Pair","Three Kind","Straight",
                           "Flush","Full House","Four Kind","Straight Flush","Royal Flush"};
-    std::cout << ranks[bestEval.rank] << ")\nTiebreakers: ";
-    for (int v : bestEval.tiebreakers) std::cout << v << " ";
+    std::cout << ranks[bestEval.getRank()] << ")\nTiebreakers: ";
+    for (int v : bestEval.getTiebreakers()) std::cout << v << " ";
     std::cout << "\n";
+    int numberTies = 1;
+    std::vector<Player> tiedPlayers;
 
     for (size_t i = 1; i < players.size(); ++i) {
         auto currentHand = {players[i].getHand()[0], players[i].getHand()[1],
@@ -333,15 +361,20 @@ Player* determineWinner(std::vector<Player> &players, const Table &table) {
 
         std::cout << "\n=== Player " << i+1 << " ===\n";
         players[i].printHand();
-        std::cout << "Rank: " << currentEval.rank << " (" << ranks[currentEval.rank] << ")\n";
+        std::cout << "Rank: " << currentEval.getRank() << " (" << ranks[currentEval.getRank()] << ")\n";
         std::cout << "Tiebreakers: ";
-        for (int v : currentEval.tiebreakers) std::cout << v << " ";
+        for (int v : currentEval.getTiebreakers()) std::cout << v << " ";
         std::cout << "\n";
 
         if (currentEval > bestEval) {
             bestPlayer = &players[i];
             bestEval = currentEval;
             std::cout << "--> New leader!\n";
+            numberTies = 1;
+        }
+        else if (currentEval == bestEval) {
+            numberTies++;
+            std::cout << "--> Tied with leader!\n";
         }
     }
 
@@ -349,11 +382,11 @@ Player* determineWinner(std::vector<Player> &players, const Table &table) {
     std::cout << "Winner: Player " << (bestPlayer == &players[0] ? 1 : 2) << "\n";
     std::cout << "Winning Hand:\n";
     bestPlayer->printHand();
-    std::cout << "Rank: " << bestEval.rank << " (" << ranks[bestEval.rank] << ")\n";
+    std::cout << "Rank: " << bestEval.getRank() << " (" << ranks[bestEval.getRank()] << ")\n";
     std::cout << "Tiebreakers: ";
-    for (int v : bestEval.tiebreakers) std::cout << v << " ";
+    for (int v : bestEval.getTiebreakers()) std::cout << v << " ";
     std::cout << "\n=====================\n";
-
+    std::cout<<numberTies;
     return bestPlayer;
 }
 
