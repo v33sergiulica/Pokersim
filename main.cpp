@@ -350,7 +350,7 @@ Player* determineWinner(std::vector<Player> &players, const Table &table) {
     for (int v : bestEval.getTiebreakers()) std::cout << v << " ";
     std::cout << "\n";
     int numberTies = 1;
-    std::vector<Player> tiedPlayers;
+    //std::vector<Player> tiedPlayers;
 
     for (size_t i = 1; i < players.size(); ++i) {
         auto currentHand = {players[i].getHand()[0], players[i].getHand()[1],
