@@ -1,21 +1,17 @@
 #include <iostream>
 #include <algorithm>
-#include <array>
 #include <random>
 #include <vector>
-#include <tuple>
-#include <map>
-#include <ostream>
-#include <set>
-/*                                                 0          1          2        3           4      */
+#include <array>
+using std::cout;
+using std::cin;
+using std::endl;
+//                                        0       1         2           3                   4           5           6           7           8                 9
+const std::array<std::string,10> handfy = {"?","High Card", "One Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Royal Flush"};
+//                                          0          1         2           3           4
 const std::array<std::string,5> suitfy = {"Hearts", "Diamonds", "Clubs", "Spades", "all Suits"};
-const std::array<std::string,14> valuefy = {"Joker", "Ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King"};
-/*                                             unused0       1     2    3    4    5    6    7    8    9    10     11      12       13   */
-
-enum HandRank {
-    HIGH_CARD, ONE_PAIR, TWO_PAIR, THREE_OF_A_KIND, STRAIGHT,
-    FLUSH, FULL_HOUSE, FOUR_OF_A_KIND, STRAIGHT_FLUSH, ROYAL_FLUSH
-};
+const std::array<std::string,14> valuefy = {"Joker", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"};
+//                                            0             1       2       3       4       5       6       7       8       9         10          11         12         13
 
 class Card {
     int value;
@@ -38,7 +34,7 @@ public:
         std::shuffle(std::begin(cards), std::end(cards), g);
         std::cout << "Shuffled" << std::endl;
     };
-   /* void print() {
+    /*void print() {
         for (int i = 0; i < 52; i++) {
             std::cout << valuefy[cards[i].getValue()] << " of " << suitfy[cards[i].getSuit()] << std::endl;
         }
@@ -64,6 +60,7 @@ public:
 
 class Player {
     Card hand[2];
+    int bestHand[4];
     int money;
     bool isPlaying;
     bool itsTurn;
@@ -74,13 +71,29 @@ public:
         hand[1] = deck.popFCard();
         deck.cycleFCard();
         money = 1000;
+        bestHand[0] = 0;
         isPlaying = true;
         itsTurn = false;
     }
-    const Card* getHand() const { return hand; }
+    void setBestHand(int bH[]) {
+        for (int i = 0; i < 4; i++) {
+            bestHand[i] = bH[i];
+        }
+    }
+    void printBestHand() {
+        for (int i : bestHand) {
+            std::cout << i << " ";
+        }
+        std::cout << std::endl;
+    }
+    Card getHandI(int i) {
+        return hand[i];
+    }
+    [[nodiscard]] const Card* getHand() const { return hand; }
     void printHand() {
         std::cout << "First card is a " << valuefy[hand[0].getValue()] << " of " << suitfy[hand[0].getSuit()] << std::endl;
         std::cout << "Second card is a " << valuefy[hand[1].getValue()] << " of " << suitfy[hand[1].getSuit()] << std::endl;
+        std::cout << std::endl;
     }
 };
 
@@ -91,6 +104,9 @@ class Table {
     bool turn;
     bool river;
 public:
+    Card getHandI(int i) {
+        return tableHand[i];
+    }
     Table() {
         for (int i = 0; i < 5; i++) { tableHand[i] = Card(); }
         betFaze = true;
@@ -114,7 +130,7 @@ public:
         turn = t;
         river = r;
     }
-    const Card* getTableHand() const { return tableHand; }
+    [[nodiscard]] const Card* getTableHand() const { return tableHand; }
     Table(const Table &other)
         : betFaze(other.betFaze),
           flop(other.flop),
@@ -145,7 +161,6 @@ public:
         river = other.river;
         return *this;
     }
-
     friend std::ostream & operator<<(std::ostream &os, const Table &obj) {
         return os
                << "betFaze: " << obj.betFaze
@@ -153,274 +168,227 @@ public:
                << " turn: " << obj.turn
                << " river: " << obj.river;
     }
-
     ~Table() = default;
     void printTable() {
         if (betFaze) { std::cout << "No cards on table" << std::endl; }
-        else if (flop) {
+        else{
             std::cout << "First table card is a " << valuefy[tableHand[0].getValue()] << " of " << suitfy[tableHand[0].getSuit()] << std::endl;
             std::cout << "Second table card is a " << valuefy[tableHand[1].getValue()] << " of " << suitfy[tableHand[1].getSuit()] << std::endl;
             std::cout << "Third table card is a " << valuefy[tableHand[2].getValue()] << " of " << suitfy[tableHand[2].getSuit()] << std::endl;
-        }
-        else if (turn) {
-            std::cout << "First table card is a " << valuefy[tableHand[0].getValue()] << " of " << suitfy[tableHand[0].getSuit()] << std::endl;
-            std::cout << "Second table card is a " << valuefy[tableHand[1].getValue()] << " of " << suitfy[tableHand[1].getSuit()] << std::endl;
-            std::cout << "Third table card is a " << valuefy[tableHand[2].getValue()] << " of " << suitfy[tableHand[2].getSuit()] << std::endl;
+        if (turn) {
             std::cout << "Fourth table card is a " << valuefy[tableHand[3].getValue()] << " of " << suitfy[tableHand[3].getSuit()] << std::endl;
         }
         else {
-            std::cout << "First table card is a " << valuefy[tableHand[0].getValue()] << " of " << suitfy[tableHand[0].getSuit()] << std::endl;
-            std::cout << "Second table card is a " << valuefy[tableHand[1].getValue()] << " of " << suitfy[tableHand[1].getSuit()] << std::endl;
-            std::cout << "Third table card is a " << valuefy[tableHand[2].getValue()] << " of " << suitfy[tableHand[2].getSuit()] << std::endl;
             std::cout << "Fourth table card is a " << valuefy[tableHand[3].getValue()] << " of " << suitfy[tableHand[3].getSuit()] << std::endl;
             std::cout << "Fifth table card is a " << valuefy[tableHand[4].getValue()] << " of " << suitfy[tableHand[4].getSuit()] << std::endl;
-        }
+        }}
+        std::cout << std::endl;
     }
 
 };
 
-class HandEvaluation {
-    int rank;
-    std::vector<int> tiebreakers;
-
-public:
-    HandEvaluation(int r, const std::vector<int>& tb) : rank(r), tiebreakers(tb) {}
-
-    // Getters
-    int getRank() const { return rank; }
-    const std::vector<int>& getTiebreakers() const { return tiebreakers; }
-
-    bool operator>(const HandEvaluation &other) const {
-        if (rank != other.rank) {
-            return rank > other.rank; // Higher rank wins
-        }
-        // If ranks are equal, compare tiebreakers one by one
-        for (size_t i = 0; i < tiebreakers.size(); ++i) {
-            if (tiebreakers[i] != other.tiebreakers[i]) {
-                return tiebreakers[i] > other.tiebreakers[i];
-            }
-        }
-        return false; // Hands are equal
-    }
-
-    bool operator==(const HandEvaluation &other) const {
-        if (rank != other.rank) {return false;}
-        for (size_t i = 0; i < tiebreakers.size(); ++i) {
-            if (tiebreakers[i] != other.tiebreakers[i]) {
-                return false;
-            }
-        }
-        return true;
-    }
-};
-
-HandEvaluation evaluateHand(const std::vector<Card>& cards) {
-    std::map<int, int> valueCount;
-    std::map<int, std::vector<int>> suitValues;
-    std::vector<int> sortedValues;
-
-    for (const auto &card : cards) {
-        valueCount[card.getValue()]++;
-        suitValues[card.getSuit()].push_back(card.getValue());
-        sortedValues.push_back(card.getValue());
-    }
-    std::sort(sortedValues.rbegin(), sortedValues.rend()); // Sort high to low
-
-    // --- Flush Detection ---
-    bool isFlush = false;
-    std::vector<int> flushCards;
-    for (const auto &[suit, values] : suitValues) {
-        if (values.size() >= 5) {
-            isFlush = true;
-            flushCards = values;
-            std::sort(flushCards.rbegin(), flushCards.rend());
-            flushCards.resize(5);
+void makeBestHand(int cardsMap[], int allTimeBestHand[]) {
+    int bestHand[4] = {0};
+    int strght = 0, flush = 0, quad = 0, triple = 0, pair = 0 ;
+    // Flush
+    for (int i = 14; i <= 17; i++) {
+        if (cardsMap[i] >= 5) {
+            flush = 1;
             break;
         }
     }
-
-    // --- Straight Detection (including Ace-low) ---
-    bool isStraight = false;
-    std::vector<int> straightCards;
-    std::set<int> uniqueValues(sortedValues.begin(), sortedValues.end());
-    // Check normal straights (e.g., 5-6-7-8-9)
-    for (auto it = uniqueValues.rbegin(); it != uniqueValues.rend(); ++it) {
-        if (uniqueValues.count(*it - 1) && uniqueValues.count(*it - 2) &&
-            uniqueValues.count(*it - 3) && uniqueValues.count(*it - 4)) {
-            isStraight = true;
-            straightCards = {*it, *it - 1, *it - 2, *it - 3, *it - 4};
+    // Straight
+    if (cardsMap[13] == 1) cardsMap[0] = 1;
+    for (int i = 0; i <= 9; i++) {
+        if (cardsMap[i]*cardsMap[i+1]*cardsMap[i+2]*cardsMap[i+3]*cardsMap[i+4] == 1) {
+            strght = 1;
             break;
         }
     }
-    // Check Ace-low straight (A-2-3-4-5)
-    if (!isStraight && uniqueValues.count(14) && uniqueValues.count(2) &&
-        uniqueValues.count(3) && uniqueValues.count(4) && uniqueValues.count(5)) {
-        isStraight = true;
-        straightCards = {5, 4, 3, 2, 1}; // Ace as low
+    // Quad, Triple, Pairs
+    for (int i = 1; i <= 13; i++) {
+        if (cardsMap[i] == 4) {quad = 1; break;}
+        if (cardsMap[i] == 3) triple = 1;
+        if (cardsMap[i] == 2) pair++;
     }
-
-    // --- Straight Flush / Royal Flush ---
-    if (isFlush && isStraight) {
-        bool isRoyal = (flushCards[0] == 14 && flushCards[4] == 10);
-        if (isRoyal) return {9, flushCards}; // Royal Flush
-        return {8, flushCards};             // Straight Flush
-    }
-
-    // --- Four of a Kind ---
-    for (const auto &[val, count] : valueCount) {
-        if (count == 4) {
-            int kicker = (val == sortedValues[0]) ? sortedValues[4] : sortedValues[0];
-            return {7, {val, kicker}};
+    // Best Hand
+    if (flush && strght) // Royal Flush
+    {
+        bestHand[0] = 9;
+        if (cardsMap[13] == 1 && cardsMap[12] == 1) bestHand[1] = 13;
+        else {
+            for (int i = 12; i >= 1; i--)
+            {
+                if (cardsMap[i] == 1) {
+                    bestHand[1] = i;
+                    break;
+                }
+            }
         }
     }
-
-    // --- Full House ---
-    int trio = -1, pair = -1;
-    for (const auto &[val, count] : valueCount) {
-        if (count == 3 && val > trio) trio = val;
-        else if (count >= 2 && val > pair) pair = val;
-    }
-    if (trio != -1 && pair != -1) return {6, {trio, pair}};
-
-    // --- Flush ---
-    if (isFlush) return {5, flushCards};
-
-    // --- Straight ---
-    if (isStraight) return {4, straightCards};
-
-    // --- Three of a Kind ---
-    if (trio != -1) {
-        std::vector<int> kickers;
-        for (int val : sortedValues) {
-            if (val != trio) kickers.push_back(val);
-            if (kickers.size() == 2) break; // Need 2 kickers
+    else if (quad) // Four of a Kind
+    {
+        bestHand[0] = 8;
+        for (int i = 1; i <= 13; i++) {
+            if (cardsMap[i] == 4) {
+                bestHand[1] = i;
+            }
+            if (cardsMap[i] == 1) {
+                bestHand[2] = i;
+            }
         }
-        return {3, {trio, kickers[0], kickers[1]}};
     }
-
-    // --- Two Pair ---
-    std::vector<int> pairs;
-    for (const auto &[val, count] : valueCount) {
-        if (count == 2) pairs.push_back(val);
+    else if (triple == 1 && pair == 1) // Full House
+    {
+        bestHand[0] = 7;
+        for (int i = 1; i <= 13; i++) {
+            if (cardsMap[i] == 3) {
+                bestHand[1] = i;
+            }
+            if (cardsMap[i] == 2) {
+                bestHand[2] = i;
+            }
+        }
     }
-    if (pairs.size() >= 2) {
-        std::sort(pairs.rbegin(), pairs.rend());
-        int kicker = -1;
-        for (int val : sortedValues) {
-            if (val != pairs[0] && val != pairs[1]) {
-                kicker = val;
+    else if (flush) // Flush
+    {
+        bestHand[0] = 6;
+        for (int i = 13; i >= 1; i--) {
+            if (cardsMap[i] == 1) {
+                bestHand[1] = i;
                 break;
             }
         }
-        return {2, {pairs[0], pairs[1], kicker}}; // [high_pair, low_pair, kicker]
     }
-
-    // --- One Pair ---
-    if (pairs.size() == 1) {
-        std::vector<int> kickers;
-        for (int val : sortedValues) {
-            if (val != pairs[0]) {
-                kickers.push_back(val);
-                if (kickers.size() == 3) break; // Need 3 kickers
+    else if (strght) // Straight
+    {
+        bestHand[0] = 5;
+        if (cardsMap[13] == 1 && cardsMap[12] == 1) bestHand[1] = 13;
+        else {
+            for (int i = 12; i >= 1; i--)
+            {
+                if (cardsMap[i] == 1) {
+                    bestHand[1] = i;
+                    break;
+                }
             }
         }
-        return {1, {pairs[0], kickers[0], kickers[1], kickers[2]}};
     }
-
-    // --- High Card ---
-    return {0, {sortedValues[0], sortedValues[1], sortedValues[2], sortedValues[3], sortedValues[4]}};
-}
-
-Player* determineWinner(std::vector<Player> &players, const Table &table) {
-    if (players.size() < 2) return players.empty() ? nullptr : &players[0];
-
-    Player* bestPlayer = &players[0];
-    auto bestHand = {bestPlayer->getHand()[0], bestPlayer->getHand()[1],
-                   table.getTableHand()[0], table.getTableHand()[1],
-                   table.getTableHand()[2], table.getTableHand()[3],
-                   table.getTableHand()[4]};
-    HandEvaluation bestEval = evaluateHand(bestHand);
-
-    std::cout << "\n=== Player 1 ===\n";
-    bestPlayer->printHand();
-    std::cout << "Rank: " << bestEval.getRank() << " (";
-    const char* ranks[] = {"High","Pair","Two Pair","Three Kind","Straight",
-                          "Flush","Full House","Four Kind","Straight Flush","Royal Flush"};
-    std::cout << ranks[bestEval.getRank()] << ")\nTiebreakers: ";
-    for (int v : bestEval.getTiebreakers()) std::cout << v << " ";
-    std::cout << "\n";
-    int numberTies = 1;
-    //std::vector<Player> tiedPlayers;
-
-    for (size_t i = 1; i < players.size(); ++i) {
-        auto currentHand = {players[i].getHand()[0], players[i].getHand()[1],
-                           table.getTableHand()[0], table.getTableHand()[1],
-                           table.getTableHand()[2], table.getTableHand()[3],
-                           table.getTableHand()[4]};
-        HandEvaluation currentEval = evaluateHand(currentHand);
-
-        std::cout << "\n=== Player " << i+1 << " ===\n";
-        players[i].printHand();
-        std::cout << "Rank: " << currentEval.getRank() << " (" << ranks[currentEval.getRank()] << ")\n";
-        std::cout << "Tiebreakers: ";
-        for (int v : currentEval.getTiebreakers()) std::cout << v << " ";
-        std::cout << "\n";
-
-        if (currentEval > bestEval) {
-            bestPlayer = &players[i];
-            bestEval = currentEval;
-            std::cout << "--> New leader!\n";
-            numberTies = 1;
-        }
-        else if (currentEval == bestEval) {
-            numberTies++;
-            std::cout << "--> Tied with leader!\n";
+    else if (triple == 1) // Three of a Kind
+    {
+        bestHand[0] = 4;
+        for (int i = 1; i <= 13; i++) {
+            if (cardsMap[i] == 3) {
+                bestHand[1] = i;
+            }
+            else if (cardsMap[i] == 1 && i > bestHand[2]) {
+                bestHand[2] = i;
+            }
         }
     }
-
-    std::cout << "\n==== FINAL RESULT ====\n";
-    std::cout << "Winner: Player " << (bestPlayer == &players[0] ? 1 : 2) << "\n";
-    std::cout << "Winning Hand:\n";
-    bestPlayer->printHand();
-    std::cout << "Rank: " << bestEval.getRank() << " (" << ranks[bestEval.getRank()] << ")\n";
-    std::cout << "Tiebreakers: ";
-    for (int v : bestEval.getTiebreakers()) std::cout << v << " ";
-    std::cout << "\n=====================\n";
-    std::cout<<numberTies;
-    return bestPlayer;
+    else if (pair == 2) // Two Pair
+    {
+        bestHand[0] = 3;
+        for (int i = 13; i >= 1; i--) {
+            if (cardsMap[i] == 2) {
+                if (bestHand[1] == 0) bestHand[1] = i;
+                else bestHand[2] = i;
+            }
+        }
+        for (int i = 13; i >= 1; i--) {
+            if (cardsMap[i] == 1) {
+                bestHand[3] = i;
+                break;
+            }
+        }
+    }
+    else if (pair == 1) // One Pair
+    {
+        bestHand[0] = 2;
+        for (int i = 1; i <= 13; i++) {
+            if (cardsMap[i] == 2) {
+                bestHand[1] = i;
+            }
+            else if (cardsMap[i] == 1 && i > bestHand[2]) {
+                bestHand[2] = i;
+            }
+        }
+    }
+    else // High Card
+    {
+        bestHand[0] = 1;
+        for (int i = 13; i >= 1; i--) {
+            if (cardsMap[i] == 1) {
+                bestHand[1] = i;
+                break;
+            }
+        }
+    }
+    int winner = 2; //bH = 1, aTBH = 0 tie = 2
+    for (int i = 0; i < 4; i++) {
+        if (bestHand[i] > allTimeBestHand[i]) {
+            winner = 1;
+            break;
+        }
+        else if (bestHand[i] < allTimeBestHand[i]) {
+            winner = 0;
+            break;
+        }
+    }
+    if (winner == 1) {
+        for (int i = 0; i < 4; i++) {
+            allTimeBestHand[i] = bestHand[i];
+        }
+    }
 }
 
-int main() {
-    Deck deck;
-    deck.shuffle();
-    Table table(deck);
-
-    // Initialize 4 players
-    std::vector<Player> players;
-    for (int i = 0; i < 4; ++i) {
-        players.emplace_back(deck);
+void createHandMap(int xfake[], const std::vector<Card> &Seven, int allTimeBestHand[])
+{
+    std::vector<Card> Five(5);
+    for (int i = 1; i <= 5; i++) {
+      Five[i - 1] = Seven[xfake[i] - 1];
     }
-
-    // Print all hands
-    for (size_t i = 0; i < players.size(); ++i) {
-        std::cout << "Player " << i+1 << ":\n";
-        players[i].printHand();
+    int cardsMap[18] = {0}; // 0 unused, 1-13 cards, 14-17 suits
+    for (int i = 0; i < 5; i++) {
+        cardsMap[Five[i].getValue()]++;
+        cardsMap[14 + Five[i].getSuit()]++;
     }
-    table.printTable();
+    makeBestHand(cardsMap, allTimeBestHand);
+}
 
-    // Find winner
-    Player* winner = determineWinner(players, table);
-
-    // Identify winner index
-    auto winnerIt = std::find_if(players.begin(), players.end(),
-        [&](const Player& p) { return &p == winner; });
-
-    if (winnerIt != players.end()) {
-        int winnerNum = winnerIt - players.begin() + 1;
-        std::cout << "\nPlayer " << winnerNum << " wins!\n";
-    } else {
-        std::cerr << "Error: Winner not found!\n";
+void generateHands(int k, const std::vector<Card>& Seven, int x[], int allTimeBestHand[]) {
+    for(int i = x[k-1] + 1 ; i <= 7 ; ++ i)
+    {
+        x[k] = i;
+        if(k == 5)
+            createHandMap(x, Seven, allTimeBestHand);
+        else
+            generateHands(k + 1, Seven, x, allTimeBestHand);
     }
+}
 
-    return 0;
+void determineBestHands(std::vector<Player> &playerVector, std::vector<Card> allPSeven)
+{
+    for (auto &player : playerVector) {
+        for (int i = 0; i < 2; i++) {
+            allPSeven.push_back(player.getHandI(i));
+        }
+        int x[6] = {0}, allTimeBestHand[4] = {0};
+        generateHands(1, allPSeven, x, allTimeBestHand);
+        player.setBestHand(allTimeBestHand);
+        player.printBestHand();
+        allPSeven.pop_back();
+        allPSeven.pop_back();
+    }
+}
+
+int main(){
+    Deck deck; deck.shuffle();
+    Player player1(deck), player2(deck), player3(deck), player4(deck);
+    std::vector<Player> playerVector = {player1, player2, player3, player4};
+    for (auto &player : playerVector) {player.printHand();}
+    Table table(deck); table.printTable();
+    std::vector<Card> allPSeven;
+    for (int i = 0; i < 5; i++) {allPSeven.push_back(table.getHandI(i));}
+    determineBestHands(playerVector, allPSeven);
 }
