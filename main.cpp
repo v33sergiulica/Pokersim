@@ -7,7 +7,7 @@ using std::cout;
 using std::cin;
 using std::endl;
 //                                        0       1         2           3                   4           5           6           7           8                 9
-const std::array<std::string,10> handfy = {"?","High Card", "One Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Royal Flush"};
+//const std::array<std::string,10> handfy = {"?","High Card", "One Pair", "Two Pair", "Three of a Kind", "Straight", "Flush", "Full House", "Four of a Kind", "Royal Flush"};
 //                                          0          1         2           3           4
 const std::array<std::string,5> suitfy = {"Hearts", "Diamonds", "Clubs", "Spades", "all Suits"};
 const std::array<std::string,14> valuefy = {"Joker", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"};
@@ -75,7 +75,7 @@ public:
         isPlaying = true;
         itsTurn = false;
     }
-    void setBestHand(int bH[]) {
+    void setBestHand(const int bH[]) {
         for (int i = 0; i < 4; i++) {
             bestHand[i] = bH[i];
         }
@@ -89,7 +89,7 @@ public:
     Card getHandI(int i) {
         return hand[i];
     }
-    [[nodiscard]] const Card* getHand() const { return hand; }
+    //const Card* getHand() const { return hand; }
     void printHand() {
         std::cout << "First card is a " << valuefy[hand[0].getValue()] << " of " << suitfy[hand[0].getSuit()] << std::endl;
         std::cout << "Second card is a " << valuefy[hand[1].getValue()] << " of " << suitfy[hand[1].getSuit()] << std::endl;
@@ -130,7 +130,7 @@ public:
         turn = t;
         river = r;
     }
-    [[nodiscard]] const Card* getTableHand() const { return tableHand; }
+    //const Card* getTableHand() const { return tableHand; }
     Table(const Table &other)
         : betFaze(other.betFaze),
           flop(other.flop),
@@ -342,11 +342,11 @@ void makeBestHand(int cardsMap[], int allTimeBestHand[]) {
     }
 }
 
-void createHandMap(int xfake[], const std::vector<Card> &Seven, int allTimeBestHand[])
+void createHandMap(const int xFake[], const std::vector<Card> &Seven, int allTimeBestHand[])
 {
     std::vector<Card> Five(5);
     for (int i = 1; i <= 5; i++) {
-      Five[i - 1] = Seven[xfake[i] - 1];
+      Five[i - 1] = Seven[xFake[i] - 1];
     }
     int cardsMap[18] = {0}; // 0 unused, 1-13 cards, 14-17 suits
     for (int i = 0; i < 5; i++) {
