@@ -61,9 +61,13 @@ public:
 class Player {
     Card hand[2];
     int bestHand[4];
-    int money;
+    int money;/*
     bool isPlaying;
     bool itsTurn;
+    bool Betted;
+    bool Checked;
+    bool Raised;
+    bool Called;*/
 public:
     explicit Player(Deck &deck) {
         hand[0] = deck.popFCard();
@@ -72,8 +76,12 @@ public:
         deck.cycleFCard();
         money = 1000;
         bestHand[0] = 0;
-        isPlaying = true;
+        /*isPlaying = true;
         itsTurn = false;
+        Betted = false;
+        Checked = false;
+        Raised = false;
+        Called = false;*/
     }
     void setBestHand(const int bH[]) {
         for (int i = 0; i < 4; i++) {
@@ -89,6 +97,33 @@ public:
     Card getHandI(int i) {
         return hand[i];
     }
+    int chooseAction() {
+        std::cout << "Choose an action:0-Fold 1-Bet 2-Raise 3-Check 4-Call" << std::endl;
+        int action = -1;
+        std::cin >> action;
+        switch (action) {
+            case 1:
+                std::cout << "Betting" << std::endl;
+                break;
+            case 2:
+                std::cout << "Raising" << std::endl;
+                break;
+            case 3:
+                std::cout << "Checking" << std::endl;
+                break;
+            case 4:
+                std::cout << "Calling" << std::endl;
+                break;
+            case 0:
+                std::cout << "Folding" << std::endl;
+                break;
+            default:
+                std::cout << "Invalid action" << std::endl;
+                action = -1;
+                break;
+        }
+        return action;
+    }
     //const Card* getHand() const { return hand; }
     void printHand() {
         std::cout << "First card is a " << valuefy[hand[0].getValue()] << " of " << suitfy[hand[0].getSuit()] << std::endl;
@@ -99,6 +134,7 @@ public:
 
 class Table {
     Card tableHand[5];
+    int pot;
     bool betFaze;
     bool flop;
     bool turn;
@@ -113,6 +149,7 @@ public:
         river = false;
         flop = false;
         turn = false;
+        pot = 0;
     }
     explicit Table(Deck &deck, bool bf = false, bool f = false, bool t = false, bool r = true) {
         tableHand[0] = deck.popFCard();
@@ -129,18 +166,32 @@ public:
         flop = f;
         turn = t;
         river = r;
+        pot = 0;
+    }
+    void setBetFaze(bool bf) { betFaze = bf; }
+    void setTurn(bool t) { turn = t; }
+    void setRiver(bool r) { river = r; }
+    void setFlop(bool f) { flop = f; }
+    int getTC() const {
+        if (betFaze) return 91;
+        else if (flop) return 92;
+        else if (turn) return 93;
+        else if (river) return 94;
+        else return 95;
     }
     //const Card* getTableHand() const { return tableHand; }
     Table(const Table &other)
         : betFaze(other.betFaze),
           flop(other.flop),
           turn(other.turn),
+          pot(other.pot),
           river(other.river) {
     }
     Table(Table &&other) noexcept
         : betFaze(other.betFaze),
           flop(other.flop),
           turn(other.turn),
+          pot(other.pot),
           river(other.river) {
     }
     Table & operator=(const Table &other) {
@@ -149,6 +200,7 @@ public:
         betFaze = other.betFaze;
         flop = other.flop;
         turn = other.turn;
+        pot = other.pot;
         river = other.river;
         return *this;
     }
@@ -158,6 +210,7 @@ public:
         betFaze = other.betFaze;
         flop = other.flop;
         turn = other.turn;
+        pot = other.pot;
         river = other.river;
         return *this;
     }
@@ -166,7 +219,8 @@ public:
                << "betFaze: " << obj.betFaze
                << " flop: " << obj.flop
                << " turn: " << obj.turn
-               << " river: " << obj.river;
+               << " river: " << obj.river
+               << " pot: " << obj.pot;
     }
     ~Table() = default;
     void printTable() {
@@ -178,7 +232,7 @@ public:
         if (turn) {
             std::cout << "Fourth table card is a " << valuefy[tableHand[3].getValue()] << " of " << suitfy[tableHand[3].getSuit()] << std::endl;
         }
-        else {
+        else if (river) {
             std::cout << "Fourth table card is a " << valuefy[tableHand[3].getValue()] << " of " << suitfy[tableHand[3].getSuit()] << std::endl;
             std::cout << "Fifth table card is a " << valuefy[tableHand[4].getValue()] << " of " << suitfy[tableHand[4].getSuit()] << std::endl;
         }}
@@ -382,13 +436,176 @@ void determineBestHands(std::vector<Player> &playerVector, std::vector<Card> all
     }
 }
 
+void getQueuePStates (std::vector<int> gameQueue, std::vector<int> &results) {
+    for (auto &i : results) results.erase(results.begin());
+    for (int i = 0; i < gameQueue.size(); i++) {
+        if (gameQueue[i] / 10 != 9) {
+            results.push_back(gameQueue[i] % 10);
+        }
+    }
+}
+
+void gameManager(std::vector<Player> &playerVector, Table &table) {
+    int P1 = 10, P2 = 20, P3 = 30, P4 = 40, TC = 90;
+    //0 => popcurrent element in vector Pi = AB; A = index+1 in playerVector; B = action
+    //P:0-Playing 1-Bet 2-Raise 3-Check 4-Call TC:0-BetFaze 1-Flop 2-Turn 3-River 4-End
+    std::vector<int> gameQueue = {P1, P2, P3, P4, TC};
+    std::vector<int> results;
+    while (gameQueue.size() > 2 && TC % 10 < 4) {
+        for (int i = 0; i < gameQueue.size(); i++) {
+            cout << gameQueue[i] << " ";
+        }
+        cout<<endl;
+        getQueuePStates(gameQueue, results);
+        for (int i = 0; i < results.size(); i++) {
+            cout << results[i] << " ";
+        }
+        cout << endl;
+        int currentPlayer = gameQueue[0] / 10 - 1;
+        int qsize = gameQueue.size();
+        if (currentPlayer == 8) {
+            int cr = table.getTC() % 10;
+            if (cr == 1) {
+                table.setFlop(true);
+                table.setBetFaze(false);
+            }
+            else if (cr == 2) {
+                table.setTurn(true);
+                table.setFlop(false);
+            }
+            else if (cr == 3) {
+                table.setRiver(true);
+                table.setTurn(false);
+            }
+            else {
+                std::cout << "Game Over" << std::endl;
+                break;
+            }
+            TC++;
+            table.printTable();
+            gameQueue.push_back(gameQueue[0]);
+            gameQueue.erase(gameQueue.begin());
+            for (int i = 0; i < qsize - 1; i++) gameQueue[i] = (gameQueue[i] / 10) * 10;
+            for (int i = 0; i < qsize - 1; i++) {
+                for (int j = i + 1; j < qsize - 1; j++) {
+                    if (gameQueue[j] / 10 < gameQueue[i] / 10) {
+                        std::swap(gameQueue[j], gameQueue[i]);
+                    }
+            }
+            }
+        }
+        else {
+            int action;
+            cout<< "Player " << currentPlayer + 1 << " turn" << endl;
+            invalid:
+            action = playerVector[currentPlayer].chooseAction();
+            if (action == 0) {
+                cout << "Player " << currentPlayer + 1 << " folded" << endl;
+                gameQueue.erase(gameQueue.begin());
+            }
+            if (action == 3) {
+                bool ok = true;
+                for (int i = 0; i < results.size(); i++){
+                    if (results[i] == 1 || results[i] == 2) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok) {
+                    gameQueue[0] = (gameQueue[0] / 10) * 10 + action;
+                    gameQueue.push_back(gameQueue[0]);
+                    gameQueue.erase(gameQueue.begin());
+                }
+                else {cout<<"Can't check if there's a bet"<<endl; goto invalid;}
+            }
+            if (action == 4) {
+                bool ok = false;
+                for (int i = 0; i < results.size(); i++){
+                    if (results[i] == 1 || results[i] == 2) {
+                        ok = true;
+                        break;
+                    }
+                }
+                if (ok) {
+                    gameQueue[0] = (gameQueue[0] / 10) * 10 + action;
+                    gameQueue.push_back(gameQueue[0]);
+                    gameQueue.erase(gameQueue.begin());
+                }
+                else {cout<<"Can't call when no bet"<<endl; goto invalid;}
+
+            }
+            if (action == 1) {
+                bool ok = true;
+                for (int i = 0; i < results.size(); i++){
+                    if (results[i] == 2 || results[i] == 1) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok) {
+                    gameQueue[0] = (gameQueue[0] / 10) * 10 + action;
+                    gameQueue.push_back(gameQueue[0]);
+                    gameQueue.erase(gameQueue.begin());
+                    for (int i = 0; i < qsize; i++) {
+                        if (gameQueue[i]/10 == TC/10) {
+                            gameQueue.erase(gameQueue.begin() + i);
+                            gameQueue.insert(gameQueue.end() - 1, TC);
+                            break;
+                        }
+                    }
+                }
+                else {cout<<"Can't bet when there's a raise/bet"<<endl; goto invalid;}
+                }
+            if (action == 2) {
+                int tert = 0;
+                for (int i = 0; i < results.size(); i++){
+                    if (results[i] == 1) {tert = 1; break;}
+                }
+                for (int i = 0; i < results.size(); i++){
+                    if (results[i] == 2) {tert = 2; break;}
+                }
+                if (tert == 0) {cout<<"Can't raise when there's no bet"<<endl; goto invalid;}
+                if (tert == 1) {
+                    gameQueue[0] = (gameQueue[0] / 10) * 10 + action;
+                    gameQueue.push_back(gameQueue[0]);
+                    gameQueue.erase(gameQueue.begin());
+                    for (int i = 0; i < qsize; i++) {
+                        if (gameQueue[i]/10 == TC/10) {
+                            gameQueue.erase(gameQueue.begin() + i);
+                            gameQueue.insert(gameQueue.end() - 1, TC);
+                            break;
+                        }
+                    }
+                } // 13 20 31 90 42
+                if (tert == 2) {
+                    for (int i = 0; i < qsize; i++) {
+                        if (gameQueue[i] % 10 == 2 || gameQueue[i] % 10 == 1) gameQueue[i] = gameQueue[i] - 1;
+                    }
+                    gameQueue[0] = (gameQueue[0] / 10) * 10 + action;
+                    gameQueue.push_back(gameQueue[0]);
+                    gameQueue.erase(gameQueue.begin());
+                    for (int i = 0; i < qsize; i++) {
+                        if (gameQueue[i]/10 == TC/10) {
+                            gameQueue.erase(gameQueue.begin() + i);
+                            gameQueue.insert(gameQueue.end() - 1, TC);
+                            break;
+                        }
+                    }
+                }
+                }
+        }
+    }
+
+}
+
 int main(){
     Deck deck; deck.shuffle();
     Player player1(deck), player2(deck), player3(deck), player4(deck);
     std::vector<Player> playerVector = {player1, player2, player3, player4};
     for (auto &player : playerVector) {player.printHand();}
-    Table table(deck); table.printTable();
+    Table table(deck,1,0,0,0); table.printTable();
+    gameManager(playerVector, table);
     std::vector<Card> allPSeven;
-    for (int i = 0; i < 5; i++) {allPSeven.push_back(table.getHandI(i));}
+    for (int i = 0; i < 5; i++) {allPSeven.push_back(table.getHandI(i)); cout<<endl;}
     determineBestHands(playerVector, allPSeven);
 }
