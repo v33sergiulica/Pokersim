@@ -145,11 +145,11 @@ public:
     }
     Table() {
         for (int i = 0; i < 5; i++) { tableHand[i] = Card(); }
+        pot = 0;
         betFaze = true;
-        river = false;
         flop = false;
         turn = false;
-        pot = 0;
+        river = false;
     }
     explicit Table(Deck &deck, bool bf = false, bool f = false, bool t = false, bool r = true) {
         tableHand[0] = deck.popFCard();
@@ -181,17 +181,17 @@ public:
     }
     //const Card* getTableHand() const { return tableHand; }
     Table(const Table &other)
-        : betFaze(other.betFaze),
+        : pot(other.pot),
+          betFaze(other.betFaze),
           flop(other.flop),
           turn(other.turn),
-          pot(other.pot),
           river(other.river) {
     }
     Table(Table &&other) noexcept
-        : betFaze(other.betFaze),
+        : pot(other.pot),
+          betFaze(other.betFaze),
           flop(other.flop),
           turn(other.turn),
-          pot(other.pot),
           river(other.river) {
     }
     Table & operator=(const Table &other) {
@@ -223,7 +223,7 @@ public:
                << " pot: " << obj.pot;
     }
     ~Table() = default;
-    void printTable() {
+    void printTable() const {
         if (betFaze) { std::cout << "No cards on table" << std::endl; }
         else{
             std::cout << "First table card is a " << valuefy[tableHand[0].getValue()] << " of " << suitfy[tableHand[0].getSuit()] << std::endl;
@@ -436,11 +436,11 @@ void determineBestHands(std::vector<Player> &playerVector, std::vector<Card> all
     }
 }
 
-void getQueuePStates (std::vector<int> gameQueue, std::vector<int> &results) {
-    for (auto &i : results) results.erase(results.begin());
-    for (int i = 0; i < gameQueue.size(); i++) {
-        if (gameQueue[i] / 10 != 9) {
-            results.push_back(gameQueue[i] % 10);
+void getQueuePStates (const std::vector<int>& gameQueue, std::vector<int> &results) {
+    results.clear();
+    for (const int i : gameQueue) {
+        if (i / 10 != 9) {
+            results.push_back(i % 10);
         }
     }
 }
@@ -452,17 +452,17 @@ void gameManager(std::vector<Player> &playerVector, Table &table) {
     std::vector<int> gameQueue = {P1, P2, P3, P4, TC};
     std::vector<int> results;
     while (gameQueue.size() > 2 && TC % 10 < 4) {
-        for (int i = 0; i < gameQueue.size(); i++) {
-            cout << gameQueue[i] << " ";
+        for (const int i : gameQueue) {
+            cout << i << " ";
         }
         cout<<endl;
         getQueuePStates(gameQueue, results);
-        for (int i = 0; i < results.size(); i++) {
-            cout << results[i] << " ";
+        for (const int result : results) {
+            cout << result << " ";
         }
         cout << endl;
         int currentPlayer = gameQueue[0] / 10 - 1;
-        int qsize = gameQueue.size();
+        unsigned long qsize = gameQueue.size();
         if (currentPlayer == 8) {
             int cr = table.getTC() % 10;
             if (cr == 1) {
@@ -505,7 +505,7 @@ void gameManager(std::vector<Player> &playerVector, Table &table) {
             }
             if (action == 3) {
                 bool ok = true;
-                for (int i = 0; i < results.size(); i++){
+                for (unsigned long i = 0; i < results.size(); i++){
                     if (results[i] == 1 || results[i] == 2) {
                         ok = false;
                         break;
@@ -520,7 +520,7 @@ void gameManager(std::vector<Player> &playerVector, Table &table) {
             }
             if (action == 4) {
                 bool ok = false;
-                for (int i = 0; i < results.size(); i++){
+                for (unsigned long i = 0; i < results.size(); i++){
                     if (results[i] == 1 || results[i] == 2) {
                         ok = true;
                         break;
@@ -536,7 +536,7 @@ void gameManager(std::vector<Player> &playerVector, Table &table) {
             }
             if (action == 1) {
                 bool ok = true;
-                for (int i = 0; i < results.size(); i++){
+                for (unsigned long i = 0; i < results.size(); i++){
                     if (results[i] == 2 || results[i] == 1) {
                         ok = false;
                         break;
