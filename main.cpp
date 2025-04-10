@@ -462,7 +462,7 @@ void gameManager(std::vector<Player> &playerVector, Table &table) {
         }
         cout << endl;
         int currentPlayer = gameQueue[0] / 10 - 1;
-        unsigned long qsize = gameQueue.size();
+        int qsize = static_cast<int>(gameQueue.size());
         if (currentPlayer == 8) {
             int cr = table.getTC() % 10;
             if (cr == 1) {
