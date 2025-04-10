@@ -558,10 +558,10 @@ void gameManager(std::vector<Player> &playerVector, Table &table) {
                 }
             if (action == 2) {
                 int tert = 0;
-                for (int i = 0; i < results.size(); i++){
+                for (unsigned long i = 0; i < results.size(); i++){
                     if (results[i] == 1) {tert = 1; break;}
                 }
-                for (int i = 0; i < results.size(); i++){
+                for (unsigned long i = 0; i < results.size(); i++){
                     if (results[i] == 2) {tert = 2; break;}
                 }
                 if (tert == 0) {cout<<"Can't raise when there's no bet"<<endl; goto invalid;}
