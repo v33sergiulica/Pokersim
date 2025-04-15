@@ -47,9 +47,6 @@ public:
             cards[i] = Card(i % 13 + 1, i / 13);
         }
     }
-    friend std::ostream & operator<<(std::ostream &os, const Deck &obj) {
-        return os;
-    }
 };
 
 class Player {
@@ -312,7 +309,7 @@ private:
         }
     }
 
-    static void createHandMap(const int xFake[], const std::vector<Card> &Five, int allTimeBestHand[]) {
+    static void createHandMap(const std::vector<Card> &Five, int allTimeBestHand[]) {
         int cardsMap[18] = {0};
         for (int i = 0; i < 5; i++) {
             cardsMap[Five[i].getValue()]++;
@@ -329,7 +326,7 @@ private:
                 for (int j = 1; j <= 5; j++) {
                     Five[j-1] = Seven[x[j]-1];
                 }
-                createHandMap(x, Five, allTimeBestHand);
+                createHandMap(Five, allTimeBestHand);
             }
             else {
                 generateHands(k + 1, Seven, x, allTimeBestHand);
