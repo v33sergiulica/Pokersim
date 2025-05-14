@@ -4,7 +4,10 @@
 #include <vector>
 #include <array>
 #include <ostream>
-
+#include <cstdlib>
+#include <cmath>
+#include <ctime>
+#include <memory>
 using std::cout;
 using std::cin;
 using std::endl;
@@ -53,14 +56,26 @@ class Player {
     Card hand[2];
     int bestHand[4];
     int money;
+    int betted;
+    int PlayerID;
 public:
-    explicit Player(Deck &deck) {
+    explicit Player(Deck &deck, int id = -1) {
         hand[0] = deck.popFCard();
         deck.cycleFCard();
         hand[1] = deck.popFCard();
         deck.cycleFCard();
         money = 1000;
+        betted = 0;
         bestHand[0] = 0;
+        PlayerID = id;
+    }
+    void newMatch(Deck &deck) {
+        hand[0] = deck.popFCard();
+        deck.cycleFCard();
+        hand[1] = deck.popFCard();
+        deck.cycleFCard();
+        betted = 0;
+        for (int i = 0; i < 4; i++){bestHand[i] = 0;};
     }
     void setBestHand(const int bH[]) {
         for (int i = 0; i < 4; i++) {
@@ -73,22 +88,25 @@ public:
         }
         std::cout << std::endl;
     }
+    int getBestHandI(int i) {
+        return bestHand[i];
+    }
     Card getHandI(int i) {
         return hand[i];
     }
-    int chooseAction() {
-        std::cout << "Choose an action:0-Fold 1-Bet 2-Raise 3-Check 4-Call" << std::endl;
-        int action = -1;
-        std::cin >> action;
-        switch (action) {
-            case 1: std::cout << "Betting" << std::endl; break;
-            case 2: std::cout << "Raising" << std::endl; break;
-            case 3: std::cout << "Checking" << std::endl; break;
-            case 4: std::cout << "Calling" << std::endl; break;
-            case 0: std::cout << "Folding" << std::endl; break;
-            default: std::cout << "Invalid action" << std::endl; action = -1; break;
-        }
-        return action;
+    virtual int chooseAction(int tableState, int maxBetted) = 0;
+    const int getMoney() const { return money; }
+    const int getBetted() const { return betted; }
+    const int getPlayerID() const { return PlayerID; }
+    void setMoney(int m) { money = m; }
+    void setBetted(int b) { betted = b; }
+    int chooseBet() {
+        int bet = -1;
+        std::cin >> bet;
+        return bet;
+    }
+    void printMoney() {
+        std::cout << "You have " << money << " money" << std::endl;
     }
     void printHand() {
         std::cout << "First card is a " << valuefy[hand[0].getValue()] << " of " << suitfy[hand[0].getSuit()] << std::endl;
@@ -98,6 +116,99 @@ public:
     friend std::ostream & operator<<(std::ostream &os, const Player &obj) {
         return os << "money: " << obj.money;
     }
+    ~Player(){};
+};
+
+class Human : public Player {
+public:
+    Human(Deck &deck, int id = -1) : Player(deck, id) {}
+    int chooseAction(int tableState, int maxBetted) override {
+        //Maybe adding tips based on vars
+        std::cout << "Choose an action: 0-Fold   1-Bet betAmount   2-Raise moneyPutDown   3-Check   4-Call" << std::endl;
+        int action = -1;
+        std::cin >> action;
+        switch (action) {
+            case 1: std::cout /*<< "Betting" */<< std::endl; break;
+            case 2: std::cout /*<< "Raising" */<< std::endl; break;
+            case 3: std::cout /*<< "Checking" */<< std::endl; break;
+            case 4: std::cout /*<< "Calling" */<< std::endl; break;
+            case 0: std::cout /*<< "Folding" */<< std::endl; break;
+            default: std::cout << "Invalid action" << std::endl; action = -1; break;
+        }
+        return action;
+    }
+};
+
+class Bot : public Player {
+    int strenght;
+    int m; //bet amount by others
+    int bluff;
+    std::array<int, 18> bluffBias;
+    int power;
+public:
+    const int setBluff (std::array<int, 18> &bluffBias) {
+        int r = rand() % 18;
+        int plus = rand() % 11;
+        return int(bluffBias[r] + plus);
+    }
+    Bot(Deck &deck, int id = -1) : Player(deck, id) {
+        strenght = 45;
+        m = 0;
+        power = 50;
+        bluffBias = {0, 10, 20, 30, 40, 40, 50, 50, 50, 50, 60, 60, 60, 70, 70, 75, 80, 90};
+        bluff = setBluff(bluffBias);
+        cout<< "Bot created with bluff of " << bluff << endl;
+    }
+    int chooseAction(int tableState, int maxBetted) override {
+        return 0;
+        double inc, f_, a, b;
+        bool action1, action2;
+        strenght = (4 - tableState % 10) * 15;
+        inc = getMoney() / 100;
+        m = maxBetted / inc;
+        f_ = strenght + power / 5 - 1 - sqrt(m) + pow(1.025, m);
+        // [0,a,b,1]
+        a = double(100-f_) / 1000;
+        b = std::max(double(((100-f_)/1000)), std::min(double((3*(100-f_))/250-double(bluff)/300), 0.95));
+        if (f_ >= 0 && f_ < 70 - double(2 * bluff) / 5 - strenght / 5)
+            action1 = true, action2 = false;
+        else if (f_ >= 70 - double(2 * bluff) / 5 - strenght / 5 && f_ <= 100)
+                action2 = true, action1 = false;
+        double random_float = (double)rand() / RAND_MAX;
+        std::cout << "Bot" << getPlayerID();
+        if (action1) {
+            if (random_float < a) {
+                std::cout << " folded" << std::endl;
+                return 0;
+            }
+            else if (random_float >= a && random_float < b) {
+                std::cout << "Bot checked" << std::endl;
+                return 0;
+            }
+            else {
+                std::cout << "Bot called" << std::endl;
+                return 0;
+            }
+        }
+        else if (action2) {
+            if (random_float < a) {
+                std::cout << "Bot folded" << std::endl;
+                return 0;
+            }
+            else if (random_float >= a && random_float < b) {
+                std::cout << "Bot raised" << std::endl;
+                return 0;
+            }
+            else {
+                std::cout << "Bot betted" << std::endl;
+                return 0;
+            }
+        }
+    }
+};
+
+class UnfairBot : public Bot {
+//same as bot, one per match unknown, knows the cards during the river
 };
 
 class Table {
@@ -134,6 +245,16 @@ public:
     void setTurn(bool t) { turn = t; }
     void setRiver(bool r) { river = r; }
     void setFlop(bool f) { flop = f; }
+    void newTable(Deck &deck) {
+        for (int i = 0; i < 5; i++) {
+            tableHand[i] = deck.popFCard();
+            deck.cycleFCard();
+        }
+        betFaze = true;
+        flop = false;
+        turn = false;
+        river = false;
+    }
     int getTC() const {
         if (betFaze) return 91;
         else if (flop) return 92;
@@ -159,7 +280,6 @@ public:
 };
 
 class HandEvaluator {
-private:
     static void makeBestHand(int cardsMap[], int allTimeBestHand[]) {
         int bestHand[4] = {0};
         int strght = 0, flush = 0, quad = 0, triple = 0, pair = 0;
@@ -308,7 +428,6 @@ private:
             }
         }
     }
-
     static void createHandMap(const std::vector<Card> &Five, int allTimeBestHand[]) {
         int cardsMap[18] = {0};
         for (int i = 0; i < 5; i++) {
@@ -317,7 +436,6 @@ private:
         }
         makeBestHand(cardsMap, allTimeBestHand);
     }
-
     static void generateHands(int k, const std::vector<Card>& Seven, int x[], int allTimeBestHand[]) {
         for(int i = x[k-1] + 1; i <= 7; ++i) {
             x[k] = i;
@@ -333,24 +451,91 @@ private:
             }
         }
     }
-
 public:
-    static void determineBestHands(std::vector<Player> &playerVector, const std::vector<Card> &communityCards) {
+    static void determineBestHands(std::vector<Player*> &playerVector, const std::vector<Card> &communityCards) {
         for (auto &player : playerVector) {
             std::vector<Card> Seven = communityCards;
-            Seven.push_back(player.getHandI(0));
-            Seven.push_back(player.getHandI(1));
+            Seven.push_back(player->getHandI(0));
+            Seven.push_back(player->getHandI(1));
 
             int x[6] = {0}, allTimeBestHand[4] = {0};
             generateHands(1, Seven, x, allTimeBestHand);
-            player.setBestHand(allTimeBestHand);
-            player.printBestHand();
+            player->setBestHand(allTimeBestHand);
+            player->printBestHand();
+        }
+    }
+    static void determineWinner(std::vector<Player*> &playerVector, int pot) {
+        int Winner = 0;
+        std::vector<int> tiers;
+        //test
+        for (auto &player : playerVector) {
+            std::cout << "Player " << player->getPlayerID() << endl;
+        }
+        int currentBestHand[4] = {0}, allTimeBestHand[4] = {0};
+        for (int i = 0; i < playerVector.size(); i++){
+            for (int j = 0; j < 4; j++) {
+                currentBestHand[j] = playerVector[i]->getBestHandI(j);
+            }
+            if (i == 0) {
+                for (int j = 0; j < 4; j++) {
+                    allTimeBestHand[j] = currentBestHand[j];
+                }
+                Winner = playerVector[i]->getPlayerID();
+                tiers.push_back(Winner);
+            }
+            else {
+                bool tie = true;
+                for (int j = 0; j < 4; j++) {
+                    if (currentBestHand[j] > allTimeBestHand[j]) {
+                        tie = false;
+                        for (int k = 0; k < 4; k++) {
+                            allTimeBestHand[k] = currentBestHand[k];
+                        }
+                        Winner = playerVector[i]->getPlayerID();
+                        tiers.clear();
+                        tiers.push_back(Winner);
+                        break;
+                    }
+                    else if (currentBestHand[j] < allTimeBestHand[j]) {
+                        tie = false;
+                        break;
+                    }
+                }
+                if (tie) {
+                    tiers.push_back(playerVector[i]->getPlayerID());
+                }
+            }
+        }
+        int tsize = tiers.size();
+        if (tsize == 1) {
+            std::cout << "Player " << Winner << " wins" << std::endl;
+            for (auto &player : playerVector) {
+                if (player->getPlayerID() == Winner) {
+                    player->setMoney(player->getMoney() + pot);
+                }
+            }
+        }
+        else {
+            float nr = 0;
+            std::cout << "It's a tie between players: ";
+            for (const auto &playerID : tiers) {
+                std::cout << playerID << " ";
+                nr++;
+            }
+            nr = pot / nr;
+            for (auto &player : playerVector) {
+                for (const auto &playerID : tiers) {
+                    if (player->getPlayerID() == playerID) {
+                        player->setMoney(player->getMoney() + nr);
+                    }
+                }
+            }
+            std::cout << std::endl;
         }
     }
 };
 
 class GameManager {
-private:
     static void getQueuePStates(const std::vector<int>& gameQueue, std::vector<int> &results) {
         results.clear();
         for (const int i : gameQueue) {
@@ -359,26 +544,69 @@ private:
             }
         }
     }
-
+    static void resetMaxBetted(std::vector<Player*> &playerVector) {
+        for (auto &player : playerVector) {
+            player->setBetted(0);
+        }
+    }
+    static int getMaxBetted(const std::vector<Player*> &playerVector) {
+        int maxBetted = 0;
+        for (const auto &player : playerVector) {
+            if (player->getBetted() > maxBetted) {
+                maxBetted = player->getBetted();
+            }
+        }
+        return maxBetted;
+    }
+    static void endMatch(std::vector<Player*> &playerVector, std::vector<Player*> &foldedPlayers) {
+        for (auto &player : foldedPlayers) {
+            cout << player->getPlayerID() << " ";
+            playerVector.push_back(player);
+        }
+        std::sort(playerVector.begin(), playerVector.end(), [](const Player* a, const Player* b) {
+            return a->getPlayerID() < b->getPlayerID();
+        });
+        for (int i = 0; i < playerVector.size(); i++) {
+            if (playerVector[i]->getMoney() == 0) {
+                std::cout << "Player " << playerVector[i]->getPlayerID() << " is out of the game" << std::endl;
+                playerVector.erase(playerVector.begin() + i);
+                i--;
+            }
+        }
+        for (auto &player : playerVector) {
+            std::cout << "Player " << player->getPlayerID() << " has " << player->getMoney() << " money" << std::endl;
+        }
+    }
 public:
-    static void runGame(std::vector<Player> &playerVector, Table &table) {
-        int P1 = 10, P2 = 20, P3 = 30, P4 = 40, TC = 90;
-        std::vector<int> gameQueue = {P1, P2, P3, P4, TC};
+    static void runGame(std::vector<Player*> &playerVector, Table &table) {
+        int TC = 90;
+        int pot = 0;
+        std::vector<int> foledPlayersIDs;
+        std::vector<Player*> foldedPlayers;
+        std::vector<int> gameQueue;
+        for (auto &player : playerVector) {
+            gameQueue.push_back(player->getPlayerID() * 10);
+        }
+        gameQueue.push_back(TC);
         std::vector<int> results;
 
         while (gameQueue.size() > 2 && TC % 10 < 4) {
             for (const int i : gameQueue) {
-                cout << i << " ";
+                cout << i << "  ";
             }
             cout<<endl;
+           for (auto &player : playerVector) {
+            cout << player->getPlayerID() << " ";
+        }
             getQueuePStates(gameQueue, results);
-            for (const int result : results) {
-                cout << result << " ";
-            }
-            cout << endl;
+            /*for (auto &player : playerVector) {
+                cout << player->getBetted() << " ";
+            }*/
             int currentPlayer = gameQueue[0] / 10 - 1;
             int qsize = static_cast<int>(gameQueue.size());
             if (currentPlayer == 8) {
+                cout << "Current pot is " << pot << endl;
+                resetMaxBetted(playerVector);
                 int cr = table.getTC() % 10;
                 if (cr == 1) {
                     table.setFlop(true);
@@ -393,7 +621,21 @@ public:
                     table.setTurn(false);
                 }
                 else {
-                    std::cout << "Game Over" << std::endl;
+                    std::vector<Card> communityCards;
+                    for (int i = 0; i < 5; i++) {communityCards.push_back(table.getHandI(i));}
+                    for (int ids : foledPlayersIDs) {
+                        for (int i = 0; i < playerVector.size(); i++) {
+                            if (playerVector[i]->getPlayerID() == ids) {
+                                playerVector.erase(playerVector.begin() + i);
+                                break;
+                            }
+                        }
+                    }
+                    HandEvaluator::determineBestHands(playerVector, communityCards);
+                    HandEvaluator::determineWinner(playerVector, pot);
+                    std::cout << "Match Over" << std::endl;
+                    std::cout << std::endl;
+                    endMatch(playerVector, foldedPlayers);
                     break;
                 }
                 TC++;
@@ -412,11 +654,24 @@ public:
             else {
                 int action;
                 cout<< "Player " << currentPlayer + 1 << " turn" << endl;
+                playerVector[currentPlayer]->printMoney();
+                if (playerVector[currentPlayer]->getMoney()){
                 invalid:
-                action = playerVector[currentPlayer].chooseAction();
+                action = playerVector[currentPlayer]->chooseAction(table.getTC(), getMaxBetted(playerVector));
                 if (action == 0) {
                     cout << "Player " << currentPlayer + 1 << " folded" << endl;
                     gameQueue.erase(gameQueue.begin());
+                    foldedPlayers.push_back(playerVector[currentPlayer]);
+                    playerVector.erase(playerVector.begin() + currentPlayer);
+                    foledPlayersIDs.push_back(currentPlayer + 1);
+                    if (gameQueue.size() == 2) {
+                        int pl;
+                        pl = std::min(gameQueue[0]/10, gameQueue[1]/10) - 1;
+                        std::cout << "Player " << playerVector[pl]->getPlayerID() << " wins" << std::endl;
+                        playerVector[pl]->setMoney(playerVector[pl]->getMoney() + pot);
+                        endMatch(playerVector, foldedPlayers);
+                        break;
+                    }
                 }
                 if (action == 3) {
                     bool ok = true;
@@ -442,6 +697,22 @@ public:
                         }
                     }
                     if (ok) {
+                        //pot; add side pot later
+                        int maxBetted = getMaxBetted(playerVector);
+                        int call = maxBetted - playerVector[currentPlayer]->getBetted();
+                        if (call > playerVector[currentPlayer]->getMoney()) {
+                            call = playerVector[currentPlayer]->getMoney();
+                            playerVector[currentPlayer]->setMoney(0);
+                            pot += call;
+                            playerVector[currentPlayer]->setBetted(call);
+                            //handle side pot
+                        }
+                        else {
+                            playerVector[currentPlayer]->setMoney(playerVector[currentPlayer]->getMoney() - call);
+                            pot += call;
+                            playerVector[currentPlayer]->setBetted(maxBetted);
+                        }
+                        //order
                         gameQueue[0] = (gameQueue[0] / 10) * 10 + action;
                         gameQueue.push_back(gameQueue[0]);
                         gameQueue.erase(gameQueue.begin());
@@ -458,6 +729,20 @@ public:
                         }
                     }
                     if (ok) {
+                        //pot
+                        ///cout << "Choose bet amount" << endl;
+                        int bet;
+                        bet = playerVector[currentPlayer]->chooseBet();
+                        if (bet > playerVector[currentPlayer]->getMoney()) {
+                            cout << "Not enough money" << endl;
+                            goto invalid;
+                        }
+                        else {
+                            playerVector[currentPlayer]->setMoney(playerVector[currentPlayer]->getMoney() - bet);
+                            pot += bet;
+                            playerVector[currentPlayer]->setBetted(bet);
+                        }
+                        //order
                         gameQueue[0] = (gameQueue[0] / 10) * 10 + action;
                         gameQueue.push_back(gameQueue[0]);
                         gameQueue.erase(gameQueue.begin());
@@ -480,6 +765,26 @@ public:
                         if (results[i] == 2) {tert = 2; break;}
                     }
                     if (tert == 0) {cout<<"Can't raise when there's no bet"<<endl; goto invalid;}
+                    //pot
+                    ///cout << "Choose raise amount" << endl;
+                    int raise;
+                    raise = playerVector[currentPlayer]->chooseBet();
+                    if (raise - playerVector[currentPlayer]->getBetted() > playerVector[currentPlayer]->getMoney()) {
+                        cout << "Not enough money" << endl;
+                        goto invalid;
+                    }
+                    else {int maxBetted = getMaxBetted(playerVector);
+                    if (raise <= maxBetted) {
+                        cout << "Raise must be higher than the max bet" << endl;
+                        goto invalid;
+                    }
+                    else {
+                        int currBet = playerVector[currentPlayer]->getBetted();
+                        playerVector[currentPlayer]->setMoney(playerVector[currentPlayer]->getMoney() - raise + currBet);
+                        pot += raise - currBet;
+                        playerVector[currentPlayer]->setBetted(raise);
+                    }}
+                    //order
                     if (tert == 1) {
                         gameQueue[0] = (gameQueue[0] / 10) * 10 + action;
                         gameQueue.push_back(gameQueue[0]);
@@ -509,32 +814,50 @@ public:
                     }
                     }
             }
+                else {
+                    gameQueue[0] = (gameQueue[0] / 10) * 10 + action;
+                    gameQueue.push_back(gameQueue[0]);
+                    gameQueue.erase(gameQueue.begin());
+            }
+            }
         }
     }
 };
 
 int main() {
+    // To implement: split pots, small/big blinds
+    srand(time(0));
     Deck deck;
-    deck.shuffle();
-
-    Player player1(deck), player2(deck), player3(deck), player4(deck);
-    std::vector<Player> playerVector = {player1, player2, player3, player4};
-
-    for (auto &player : playerVector) {
-        player.printHand();
-    }
-
+    Player *player1Ptr, *player2Ptr, *player3Ptr, *player4Ptr;
+    /*Human player1(deck, 1);
+    player1Ptr = &player1;
+    Bot player2(deck, 2);
+    player2Ptr = &player2;
+    Bot player3(deck, 3);
+    player3Ptr = &player3;
+    Human player4(deck, 4);
+    player4Ptr = &player4; */
+    //std::vector<Player*> playerVector = {player1Ptr, player2Ptr, player3Ptr, player4Ptr};
+    std::vector<std::unique_ptr<Player>> playerVector;
+    playerVector.push_back(std::make_unique<Human>(deck, 1));
+    playerVector.push_back(std::make_unique<Bot>(deck, 2));
+    playerVector.push_back(std::make_unique<Bot>(deck, 3));
+    playerVector.push_back(std::make_unique<Human>(deck, 4));
     Table table(deck, true, false, false, false);
-    table.printTable();
-
-    GameManager::runGame(playerVector, table);
-
-    std::vector<Card> communityCards;
-    for (int i = 0; i < 5; i++) {
-        communityCards.push_back(table.getHandI(i));
+    while (playerVector.size() > 1) {
+        deck.shuffle();
+        for (auto &player : playerVector) {
+            cout <<player->getPlayerID() << endl;
+            player->newMatch(deck);
+            player->printHand();
+        }
+        table.newTable(deck);
+        std::vector<Player*> rawPtrs;
+        for (auto& p : playerVector)
+            rawPtrs.push_back(p.get());
+        GameManager::runGame(rawPtrs, table);
+        cout << endl << endl << endl << endl << endl << endl;
     }
-
-    HandEvaluator::determineBestHands(playerVector, communityCards);
-
     return 0;
 }
+
